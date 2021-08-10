@@ -5,6 +5,8 @@ test("dummy test", () => {
   const result = listHelper.dummy(blogs);
   expect(result).toBe(1);
 });
+
+/********************************************************/
 const blogs = [
   {
     _id: "5a422a851b54a676234d17f7",
@@ -55,12 +57,17 @@ const blogs = [
     __v: 0,
   },
 ];
+
 describe("Total likes", () => {
+  /********************************************************/
+
   test("totalLikes test", () => {
     const result = listHelper.totalLikes(blogs);
     expect(result).toBe(36);
   });
 });
+
+/********************************************************/
 
 describe("Getting the blog with the highest likes", () => {
   test("favorite Blog", () => {
@@ -73,6 +80,9 @@ describe("Getting the blog with the highest likes", () => {
     expect(result).toEqual(expected);
   });
 });
+
+/********************************************************/
+
 describe("Geting the author with the highest number of blogs", () => {
   test("Most blogs test", () => {
     const expected = {
@@ -83,6 +93,8 @@ describe("Geting the author with the highest number of blogs", () => {
     expect(result).toEqual(expected);
   });
 });
+
+/********************************************************/
 
 describe("Geting the author with the highest number of likes in all posts", () => {
   test("Most liked author test", () => {
