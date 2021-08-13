@@ -1,8 +1,8 @@
-const listHelper = require("../utils/list_helper");
+const testHelper = require("../utils/blog_test_helper");
 
 test("dummy test", () => {
   const blogs = [];
-  const result = listHelper.dummy(blogs);
+  const result = testHelper.dummy(blogs);
   expect(result).toBe(1);
 });
 
@@ -62,7 +62,7 @@ describe("Total likes", () => {
   /********************************************************/
 
   test("totalLikes test", () => {
-    const result = listHelper.totalLikes(blogs);
+    const result = testHelper.totalLikes(blogs);
     expect(result).toBe(36);
   });
 });
@@ -76,7 +76,7 @@ describe("Getting the blog with the highest likes", () => {
       author: "Edsger W. Dijkstra",
       likes: 12,
     };
-    const result = listHelper.favoriteBlog(blogs);
+    const result = testHelper.favoriteBlog(blogs);
     expect(result).toEqual(expected);
   });
 });
@@ -89,7 +89,7 @@ describe("Geting the author with the highest number of blogs", () => {
       author: "Robert C. Martin",
       blogs: 3,
     };
-    const result = listHelper.mostBlogs(blogs);
+    const result = testHelper.mostBlogs(blogs);
     expect(result).toEqual(expected);
   });
 });
@@ -102,7 +102,7 @@ describe("Geting the author with the highest number of likes in all posts", () =
       author: "Edsger W. Dijkstra",
       likes: 17,
     };
-    const result = listHelper.mostLikes(blogs);
+    const result = testHelper.mostLikes(blogs);
     expect(result).toEqual(expected);
   });
 });

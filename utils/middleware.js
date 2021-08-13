@@ -1,4 +1,5 @@
 const logger = require("./logger");
+const jwt = require("jsonwebtoken");
 
 const requestLogger = (request, response, next) => {
   logger.info("Method:", request.method);
@@ -19,13 +20,44 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).send({ error: "malformatted id" });
   } else if (error.name === "ValidationError") {
     return response.status(400).json({ error: error.message });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({
+      error: error.message,
+    });
   }
 
   next(error);
 };
 
+//user authentication middleware
+const userAuth = (request, response, next) => {
+  const authorization = request.get("authorization");
+
+  if (authorization) {
+    const token = authorization.substring(7);
+
+    try {
+      const decoded = jwt.verify(token, process.env.SECRET);
+      request.user = decoded;
+
+      next();
+    } catch (error) {
+      return response.status(401).json({ msg: "Token is not valid" });
+    }
+  } else {
+    return response.status(401).json({ msg: "No token, authorization denied" });
+  }
+};
+// const userExtractor = (request, response, next) => {
+//   if (request.token) {
+//     decodedToken = jwt.verify(request.token, process.env.SECRET);
+//     request.user = decodedToken;
+//   }
+//   next();
+// };
 module.exports = {
   unknownEndpoint,
   requestLogger,
   errorHandler,
+  userAuth,
 };

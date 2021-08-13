@@ -1,17 +1,15 @@
 const mongoose = require("mongoose");
 const superTest = require("supertest");
 const app = require("../app");
-const helper = require("./../utils/api_helper");
+const helper = require("./../utils/api_test_helper");
 const Blogs = require("../models/blogs");
+const Users = require("../models/users");
 
 const api = superTest(app);
 
 beforeEach(async () => {
   await Blogs.deleteMany({});
-
-  const blogObjects = helper.initialBlogs.map(blog => new Blogs(blog));
-  const promiseArray = blogObjects.map(blog => blog.save());
-  await Promise.all(promiseArray);
+  await Users.deleteMany({});
 });
 /********************************************************/
 
@@ -23,97 +21,78 @@ test("blogs are returned as json", async () => {
 });
 
 /********************************************************/
+describe("Addin a Blog by authorized persons", () => {
+  test("Verify that a post can be added if user is authorized", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+
+    //user onbject
+    const newUser = {
+      name: "Idris Musa",
+      username: "idmaye",
+      password: "1234",
+    };
+
+    //adding a user
+    await api
+      .post("/api/users")
+      .send(newUser)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    //login a user to get a token before addin a blog
+    const loggedInUser = await api
+      .post("/api/login")
+      .send({ username: newUser.username, password: newUser.password });
+
+    //the blog object
+    const newBlog = {
+      title: "I am the most used name",
+      author: "John Doe",
+      url: "http://complain.ng",
+      likes: 19,
+    };
+
+    //send a post request to save a blog. attached with an auth token from loggedin user
+    const savedBlog = await api
+      .post("/api/blogs")
+      .set("authorization", `bearer ${loggedInUser.body.token}`)
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
+
+    const blogsAtEnd = await helper.blogsInDb();
+
+    expect(blogsAtEnd).toHaveLength(blogsAtStart.length + 1); //check if db blocks increased
+
+    expect(savedBlog.body.user).toBe(loggedInUser.body.id); //check if the loggedin user was added to the saved blog
+  });
+
+  test("Verify that a post addition fail if user is not authorzed", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+
+    //the blog object
+    const newBlog = {
+      title: "I am the most used name",
+      author: "John Doe",
+      url: "http://complain.ng",
+      likes: 19,
+    };
+
+    //send a post request to save a blog. attached with a wriong token
+    const savedBlog = await api
+      .post("/api/blogs")
+      .set("authozation", `bearer wrongAuth`)
+      .send(newBlog)
+      .expect(401)
+      .expect("Content-Type", /application\/json/);
+  });
+});
+/********************************************************/
 test("The Unique Identifier property is name id", async () => {
   const response = await api.get("/api/blogs");
 
   const ids = response.body.map(item => item["id"]); ///?????
   expect(ids).toBeDefined();
-});
-
-/********************************************************/
-
-test("Verify that a post can be added", async () => {
-  const newBlog = {
-    title: "I am the most used name",
-    author: "John Doe",
-    url: "http://complain.ng",
-    likes: 19,
-  };
-
-  await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(201)
-    .expect("Content-Type", /application\/json/);
-
-  const blogsInDb = await helper.blogsInDb();
-
-  expect(blogsInDb).toHaveLength(helper.initialBlogs.length + 1);
-  const title = blogsInDb.map(blog => blog.title);
-  expect(title).toContain("I am the most used name");
-});
-
-/********************************************************/
-
-test("Verify that if like is missing 0 is return", async () => {
-  const newBlog = {
-    title: "I am the most used name",
-    author: "John Doe",
-    url: "http://complain.ng",
-  };
-
-  const result = await api.post("/api/blogs").send(newBlog);
-
-  expect(result.body.likes).toBe(0);
-});
-/********************************************************/
-
-test("Verify wether url/title are missing", async () => {
-  const newBlog = {
-    author: "John Doe",
-  };
-
-  const result = await api.post("/api/blogs").send(newBlog);
-  console.log(result);
-});
-
-/********************************************************/
-
-test("Deleting a blog post", async () => {
-  const initialBlogs = helper.initialBlogs;
-  const blogsInDb = await helper.blogsInDb();
-
-  const blogTodelete = blogsInDb[0]; //post to delete
-
-  await api.delete(`/api/blogs/${blogTodelete.id}`).expect(204); //delete
-
-  const dbEnd = await helper.blogsInDb(); //fetch final db
-
-  expect(dbEnd).toHaveLength(initialBlogs.length - 1);
-});
-
-/********************************************************/
-
-test("Updating a blog post", async () => {
-  const updatedBlogPost = {
-    title: "Dev life is boring",
-    author: "Isa ",
-    url: "http://check.com",
-    likes: 18,
-  };
-
-  const blogsInDb = await helper.blogsInDb();
-
-  const blogToUpdate = blogsInDb[0]; //post to delete
-
-  blogToUpdate.likes = 29;
-
-  const updated = await api
-    .put(`/api/blogs/${blogToUpdate.id}`)
-    .send(blogToUpdate)
-    .expect(204); //delete
-
-  expect(updated.body.likes).toBe(blogToUpdate.likes);
 });
 
 afterAll(() => {
