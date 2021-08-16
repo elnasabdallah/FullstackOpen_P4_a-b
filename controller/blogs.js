@@ -28,31 +28,38 @@ blogsRouter.post("/", userAuth, async (request, response, next) => {
   }
 });
 
-blogsRouter.delete("/:id", async (request, response) => {
+blogsRouter.delete("/:id", userAuth, async (request, response, next) => {
+  const authUser = request.user;
   const obj = await Blog.findById(request.params.id);
   if (!obj) {
     return response.status(400).send({ message: "Invalid id" });
   }
-  const tokenUser = request.user;
-  if (obj.user.toString() !== tokenUser.id.toString()) {
-    return response
-      .status(401)
-      .send({ error: "Not authorized to delete this blog" });
-  }
-  const user = await User.findById(tokenUser.id);
-  await Blog.findByIdAndRemove(request.params.id);
-  user.blogs.splice(obj.id, 1); //remove blog id from user's list
-  await user.save(); //save
+  try {
+    const user = await User.findById(authUser.id);
+    await Blog.findByIdAndRemove(request.params.id);
+    user.blogs.splice(obj.id, 1); //remove blog id from user's list
+    await user.save(); //save
 
-  response.status(204).send();
+    response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 });
 
-blogsRouter.put("/:id", async (request, response) => {
-  const updatedPost = request.body;
-  const result = await Blog.findByIdAndUpdate(request.params.id, updatedPost, {
-    new: true,
-  });
-  response.json(result);
+blogsRouter.put("/:id", async (request, response, next) => {
+  try {
+    const updatedPost = request.body;
+    const result = await Blog.findByIdAndUpdate(
+      request.params.id,
+      updatedPost,
+      {
+        new: true,
+      }
+    ).populate("user", { username: 1, name: 1 });
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = blogsRouter;
