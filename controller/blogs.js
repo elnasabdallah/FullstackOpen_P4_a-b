@@ -2,6 +2,7 @@ const blogsRouter = require("express").Router();
 const User = require("../models/users");
 const Blog = require("../models/blogs");
 const userAuth = require("../utils/middleware").userAuth;
+const Comment = require("./../models/comments");
 
 blogsRouter.get("/", async (request, response) => {
   const blogs = await Blog.find({}).populate("user", { username: 1, name: 1 });
@@ -9,6 +10,17 @@ blogsRouter.get("/", async (request, response) => {
   response.json(blogs);
 });
 
+blogsRouter.get("/:id", async (request, response) => {
+  const id = request.params.id;
+  const blogs = await Blog.findById(id)
+    .populate("user", {
+      username: 1,
+      name: 1,
+    })
+    .populate("comments", { comment: 1 });
+
+  response.json(blogs);
+});
 blogsRouter.post("/", userAuth, async (request, response, next) => {
   const authUser = request.user;
 
@@ -22,6 +34,22 @@ blogsRouter.post("/", userAuth, async (request, response, next) => {
 
     user.blogs = user.blogs.concat(result._id); //adding blog id to users list of blogs
     await user.save();
+    response.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+blogsRouter.post("/:id/comments", async (request, response, next) => {
+  const blogId = request.params.id;
+  const blog = await Blog.findById(blogId);
+
+  const comment = { comment: request.body.text, blog: blogId };
+  try {
+    const newComment = new Comment(comment);
+    const result = await newComment.save();
+    blog.comments = blog.comments.concat(newComment._id);
+    await blog.save();
     response.status(201).json(result);
   } catch (error) {
     next(error);
